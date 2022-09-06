@@ -1,26 +1,6 @@
 pybuspro - A Buspro Library Written in Python
 ====================================================
 
-Documentation
--------------
-
-See documentation at: [https://github.com/eyesoft/pybuspro/docs/](https://github.com/eyesoft/pybuspro/docs/).
-
-
-Home-Assistant Plugin
----------------------
-
-pybuspro contains a Plugin for the [Home-Assistant](https://home-assistant.io/) automation plattform.
-
-
-Installation
--------
-
-```commandline
-pip3 install pybuspro
-```
-
-
 Example
 -------
 
