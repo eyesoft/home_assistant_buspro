@@ -14,9 +14,6 @@ buspro:
   port: PORT
   name: "My Buspro installation"
 ```
-
-Configuration variables:
-
 + **host** _(string) (Required)_: The ip address of your Buspro Ethernet gateway
 + **port** _(int) (Required)_: The UDP port to your Buspro Ethernet gateway
 + **name** _(string) (Optional)_: The name of the installation
@@ -37,9 +34,6 @@ light:
         name: Front Door Light
         dimmable = False
 ```
-
-Configuration variables:
-
 + **running_time** _(int) (Optional)_: Default running time in seconds for all devices. Running time is 0 seconds if not set.
 + **devices** _(Required)_: A list of devices to set up
   + **X.X.X** _(Required)_: The address of the device on the format `<subnet ID>.<device ID>.<channel number>`
@@ -60,9 +54,6 @@ switch:
       1.89.2:
         name: Front Door Switch
 ```
-
-Configuration variables:
-
 + **devices** _(Required)_: A list of devices to set up
   + **X.X.X** _(Required)_: The address of the device on the format `<subnet ID>.<device ID>.<channel number>`
     + **name** _(string) (Required)_: The name of the device
@@ -86,9 +77,6 @@ sensor:
         type: illuminance
         unit_of_measurement: lux
 ```
-
-Configuration variables:
-
 + **devices** _(Required)_: A list of devices to set up
   + **address** _(string) (Required)_: The address of the sensor device on the format `<subnet ID>.<device ID>`
   + **name** _(string) (Required)_: The name of the device
@@ -121,9 +109,6 @@ binary_sensor:
         name: Kitchen switch
         type: single_channel
 ```
-
-Configuration variables:
-
 + **devices** _(Required)_: A list of devices to set up
   + **address** _(string) (Required)_: The address of the sensor device on the format `<subnet ID>.<device ID>`. If 
   'type' = 'universal_switch' universal switch number must be appended to the address. 
@@ -152,9 +137,6 @@ climate:
       - address: 1.74
         name: Front Door
 ```
-
-Configuration variables:
-
 + **devices** _(Required)_: A list of devices to set up
   + **address** _(string) (Required)_: The address of the sensor device on the format `<subnet ID>.<device ID>`
   + **name** _(string) (Required)_: The name of the device
