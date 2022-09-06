@@ -1,12 +1,13 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
-
 # HDL Buspro
+
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 
 The HDL Buspro integration allows you to control your HDL Buspro system from Home Assistant.
 
-## configuration.yaml
+## Installation
+Under HACS -> Integrations, add custom repository "https://github.com/eyesoft/home_assistant_buspro/" with Category "Integration". Select the newly added integration named "HDL Buspro" and install it.
 
-#### Component
+## Configuration
 
 To enable the use of the Buspro component in your installation, add the following to your configuration.yaml file:
 
