@@ -1,60 +1,223 @@
-pybuspro - A Buspro Library Written in Python
-====================================================
+# Configuration of Buspro plug-in
 
-Documentation
--------------
+##configuration.yaml
 
-See documentation at: [https://github.com/eyesoft/pybuspro/docs/](https://github.com/eyesoft/pybuspro/docs/).
+####Component
 
+To enable the use of the Buspro component in your installation, add the following to your configuration.yaml file:
 
-Home-Assistant Plugin
----------------------
-
-pybuspro contains a Plugin for the [Home-Assistant](https://home-assistant.io/) automation plattform.
-
-
-Installation
--------
-
-```commandline
-pip3 install pybuspro
+```yaml
+buspro:
+  host: IP_ADDRESS
+  port: PORT
+  name: "My Buspro installation"
 ```
 
+Configuration variables:
 
-Example
--------
++ **host** _(string) (Required)_: The ip address of your Buspro Ethernet gateway
++ **port** _(int) (Required)_: The UDP port to your Buspro Ethernet gateway
++ **name** _(string) (Optional)_: The name of the installation
 
-```python
-"""Example for switching a light on and off."""
-import asyncio
+####Light platform
+   
+To use your Buspro light in your installation, add the following to your configuration.yaml file: 
 
-from pybuspro.buspro import Buspro
-from pybuspro.devices.light import Light
+```yaml
+light:
+  - platform: buspro
+    running_time: 3
+    devices:
+      1.89.1:
+        name: Living Room Light
+        running_time = 5
+      1.89.2:
+        name: Front Door Light
+        dimmable = False
+```
 
-GATEWAY_ADDRESS_SEND_RECEIVE = (('127.0.0.1', 6000), ('', 6000))
+Configuration variables:
 
++ **running_time** _(int) (Optional)_: Default running time in seconds for all devices. Running time is 0 seconds if not set.
++ **devices** _(Required)_: A list of devices to set up
+  + **X.X.X** _(Required)_: The address of the device on the format `<subnet ID>.<device ID>.<channel number>`
+    + **name** _(string) (Required)_: The name of the device
+    + **running_time** _(int) (Optional)_: The running time in seconds for the device. If omitted, the default running time for all devices is used.
+    + **dimmable** _(boolean) (Optional)_: Is the device dimmable? Default is True. 
 
-def callback_all_messages(telegram):
-    print(telegram)
-    pass
+####Switch platform
+
+To use your Buspro switch in your installation, add the following to your configuration.yaml file: 
+
+```yaml
+switch:
+  - platform: buspro
+    devices:
+      1.89.1:
+        name: Living Room Switch
+      1.89.2:
+        name: Front Door Switch
+```
+
+Configuration variables:
+
++ **devices** _(Required)_: A list of devices to set up
+  + **X.X.X** _(Required)_: The address of the device on the format `<subnet ID>.<device ID>.<channel number>`
+    + **name** _(string) (Required)_: The name of the device
+
+####Sensor platform
+
+To use your Buspro sensor in your installation, add the following to your configuration.yaml file: 
+
+```yaml
+sensor:
+  - platform: buspro
+    devices:
+      - address: 1.74
+        name: Living Room
+        type: temperature
+        unit_of_measurement: °C
+        device_class: temperature
+        device: dlp
+      - address: 1.74
+        name: Front Door
+        type: illuminance
+        unit_of_measurement: lux
+```
+
+Configuration variables:
+
++ **devices** _(Required)_: A list of devices to set up
+  + **address** _(string) (Required)_: The address of the sensor device on the format `<subnet ID>.<device ID>`
+  + **name** _(string) (Required)_: The name of the device
+  + **type** _(string) (Required)_: Type of sensor to monitor. 
+    + Available sensors: 
+     + temperature
+     + illuminance
+  + **unit_of_measurement** _(string) (Optional)_: text to be displayed as unit of measurement
+  + **device_class** _(string) (Optional)_: HASS device class e.g., "temperature" 
+  (https://www.home-assistant.io/components/sensor/)
+  + **device** _(string) (Optional)_: The type of sensor device:
+    + dlp 
+
+####Binary sensor platform
+
+To use your Buspro binary sensor in your installation, add the following to your configuration.yaml file: 
+
+```yaml
+binary_sensor:
+  - platform: buspro
+    devices:
+      - address: 1.74
+        name: Living Room
+        type: motion
+        device_class: motion
+      - address: 1.74.100
+        name: Front Door
+        type: universal_switch
+      - address: 1.75.3
+        name: Kitchen switch
+        type: single_channel
+```
+
+Configuration variables:
+
++ **devices** _(Required)_: A list of devices to set up
+  + **address** _(string) (Required)_: The address of the sensor device on the format `<subnet ID>.<device ID>`. If 
+  'type' = 'universal_switch' universal switch number must be appended to the address. 
+  + **name** _(string) (Required)_: The name of the device
+  + **type** _(string) (Required)_: Type of sensor to monitor. 
+    + Available sensors: 
+      + motion 
+      + dry_contact_1 
+      + dry_contact_2
+      + universal_switch
+      + single_channel
+  + **device_class** _(string) (Optional)_: HASS device class e.g., "motion" 
+  (https://www.home-assistant.io/components/binary_sensor/)
+
+####Climate platform
+
+To use your Buspro panel climate control in your installation, add the following to your configuration.yaml file: 
+
+```yaml
+climate:
+  - platform: buspro
+    devices:
+      - address: 1.74
+        name: Living Room
+        supports_operation_mode: False
+      - address: 1.74
+        name: Front Door
+```
+
+Configuration variables:
+
++ **devices** _(Required)_: A list of devices to set up
+  + **address** _(string) (Required)_: The address of the sensor device on the format `<subnet ID>.<device ID>`
+  + **name** _(string) (Required)_: The name of the device
+  + **supports_operation_mode** _(boolean) (Optional)_: Does the climate control support change of operation mode? 
+  Default is True if not set.
     
-    
-async def main():
-    """Connect to Buspro bus, switch on light, wait 2 seconds and switch of off again."""
-    buspro = Buspro(GATEWAY_ADDRESS_SEND_RECEIVE)
-    # buspro.register_telegram_received_cb_2(callback_all_messages)
-    await buspro.start()
-    
-    light = Light(buspro, device_address=(1, 100), channel_number=9, name="name of light")
-    await light.set_on()
-    await asyncio.sleep(2)
-    await light.set_off()
-    
-    # await buspro.disconnect()
+---
+##Services
 
+####Sending an arbitrary message:
+```
+Domain: buspro
+Service: send_message
+Service Data: {"address": [1,74], "operate_code": [4,78], "payload": [1,100,0,3]}
+```
+####Activating a scene:
+```
+Domain: buspro
+Service: activate_scene
+Service Data: {"address": [1,74], "scene_address": [3,5]}
+```
+####Setting an universal switch:
+```
+Domain: buspro
+Service: set_universal_switch
+Service Data: {"address": [1,74], "switch_number": 100, "status": 1}
+```
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
-loop.run_forever()
+# Configuration of GoGoGate2 plug-in
 
+##configuration.yaml
+
+####Component
+
+To enable the use of the GoGoGate2 component in your installation, add the following to your configuration.yaml file:
+
+```yaml
+gogogate2:
+  username: MY_USERNAME
+  password: MY_PASSWORD
+  ip_address: IP_ADDRESS
+  name: My Gate
+```
+
+Configuration variables:
+
++ **username** _(string) (Required)_: Your Gogogate2 account username.
++ **password** _(string) (Required)_: Your Gogogate2 account password.
++ **ip_address** _(string) (Required)_: The IP Address of your Gogogate2 device.
++ **name** _(string) (Optional)_: Allows you to override the default name. Default value: gogogate2
+
+####Sensor platform
+
+To use your GoGoGate2 temperature sensor in your installation, add the following to your configuration.yaml file: 
+
+```yaml
+sensor:
+  - platform: gogogate2
+```
+
+####Binary sensor platform
+
+To use your GoGoGate2 opened/closed binary sensor in your installation, add the following to your configuration.yaml file: 
+
+```yaml
+binary_sensor:
+  - platform: gogogate2
 ```
