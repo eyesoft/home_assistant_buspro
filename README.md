@@ -2,6 +2,8 @@
 
 # HDL Buspro
 
+The HDL Buspro integration allows you to control your HDL Buspro system from Home Assistant.
+
 ## configuration.yaml
 
 #### Component
