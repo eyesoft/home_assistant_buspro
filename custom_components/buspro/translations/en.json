@@ -3,9 +3,9 @@
     "step": {
       "user": {
         "title": "Buspro gateway configuration",
-        "description": "Enter IP-address and port number of the gateway.",
+        "description": "Enter IP address and port number of the gateway.",
         "data": {
-          "host": "Host address",
+          "host": "Host IP address",
           "port": "Port number"
         }
       }
