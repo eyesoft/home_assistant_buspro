@@ -5,7 +5,11 @@
 The HDL Buspro integration allows you to control your HDL Buspro system from Home Assistant.
 
 ## Installation
-Under HACS -> Integrations, add custom repository "https://github.com/eyesoft/home_assistant_buspro/" with Category "Integration". Select the newly added integration named "HDL Buspro" and install it.
+Under HACS -> Integrations, add custom repository "https://github.com/eyesoft/home_assistant_buspro/" with Category "Integration". Select the integration named "HDL Buspro" and download it.
+
+Restart Home Assistant.
+
+Go to Settings > Integrations and Add Integration "HDL Buspro". Type in IP address and port number of the gateway.
 
 ## Configuration
 
@@ -13,13 +17,7 @@ To enable the use of the Buspro component in your installation, add the followin
 
 ```yaml
 buspro:
-  host: IP_ADDRESS
-  port: PORT
-  name: "My Buspro installation"
 ```
-+ **host** _(string) (Required)_: The ip address of your Buspro Ethernet gateway
-+ **port** _(int) (Required)_: The UDP port to your Buspro Ethernet gateway
-+ **name** _(string) (Optional)_: The name of the installation
 
 #### Light platform
    
