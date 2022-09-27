@@ -1,0 +1,17 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Buspro gateway configuration",
+        "description": "Enter IP-address and port number of the gateway.",
+        "data": {
+          "host": "Host address",
+          "port": "Port number"
+        }
+      }
+    },
+    "error": {
+      "unknown": "An error occured."
+    }
+  }
+}
