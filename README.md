@@ -13,12 +13,6 @@ Go to Settings > Integrations and Add Integration "HDL Buspro". Type in IP addre
 
 ## Configuration
 
-To enable the use of the Buspro component in your installation, add the following to your configuration.yaml file:
-
-```yaml
-buspro:
-```
-
 #### Light platform
    
 To use your Buspro light in your installation, add the following to your configuration.yaml file: 
