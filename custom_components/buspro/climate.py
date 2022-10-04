@@ -39,21 +39,6 @@ from .pybuspro.helpers.enums import OnOffStatus
 
 _LOGGER = logging.getLogger(__name__)
 
-CONF_SUPPORTS_OPERATION_MODE = "supports_operation_mode"
-CONF_RELAY_ADDRESS = "relay_address"
-
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_DEVICES):
-        vol.All(cv.ensure_list, [
-            vol.All({
-                vol.Required(CONF_ADDRESS): cv.string,
-                vol.Required(CONF_NAME): cv.string,
-                vol.Optional(CONF_SUPPORTS_OPERATION_MODE, default=True): cv.boolean,
-                vol.Optional(CONF_RELAY_ADDRESS, default=''): cv.string,
-            })
-        ])
-})
-
 PRESET_NONE = "none"
 PRESET_AWAY = "away"
 PRESET_HOME = "home"
@@ -72,6 +57,23 @@ HDL_TO_HA_PRESET = {
     4: PRESET_AWAY,     # Away
 }
 
+CONF_PRESET_MODES = "preset_modes"
+CONF_RELAY_ADDRESS = "relay_address"
+
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
+    vol.Required(CONF_DEVICES):
+        vol.All(cv.ensure_list, [
+            vol.All({
+                vol.Required(CONF_ADDRESS): cv.string,
+                vol.Required(CONF_NAME): cv.string,
+                vol.Optional(CONF_PRESET_MODES, default=[]): vol.All(
+                    cv.ensure_list, [vol.In(HA_PRESET_TO_HDL)]
+                ),
+                vol.Optional(CONF_RELAY_ADDRESS, default=''): cv.string,
+            })
+        ])
+})
+
 
 # noinspection PyUnusedLocal
 async def async_setup_platform(hass, config, async_add_entites, discovery_info=None):
@@ -86,7 +88,7 @@ async def async_setup_platform(hass, config, async_add_entites, discovery_info=N
     for device_config in config[CONF_DEVICES]:
         address = device_config[CONF_ADDRESS]
         name = device_config[CONF_NAME]
-        supports_operation_mode = device_config[CONF_SUPPORTS_OPERATION_MODE]
+        preset_modes = device_config[CONF_PRESET_MODES]
 
         address2 = address.split('.')
         device_address = (int(address2[0]), int(address2[1]))
@@ -103,7 +105,7 @@ async def async_setup_platform(hass, config, async_add_entites, discovery_info=N
             relay_channel_number = int(relay_address2[2])
             relay_sensor = Sensor(hdl, relay_device_address, channel_number=relay_channel_number)
 
-        devices.append(BusproClimate(hass, climate, supports_operation_mode, relay_sensor))
+        devices.append(BusproClimate(hass, climate, preset_modes, relay_sensor))
 
     async_add_entites(devices)
 
@@ -112,12 +114,12 @@ async def async_setup_platform(hass, config, async_add_entites, discovery_info=N
 class BusproClimate(ClimateEntity):
     """Representation of a Buspro switch."""
 
-    def __init__(self, hass, device, supports_operation_mode, relay_sensor):
+    def __init__(self, hass, device, preset_modes, relay_sensor):
         self._hass = hass
         self._device = device
         self._target_temperature = self._device.target_temperature
         self._is_on = self._device.is_on
-        self._supports_operation_mode = supports_operation_mode
+        self._preset_modes = preset_modes
         self._mode = self._device.mode  # 1/3/4
 
         self._relay_sensor = relay_sensor
@@ -195,7 +197,7 @@ class BusproClimate(ClimateEntity):
     def supported_features(self):
         """Return the list of supported features."""
         support = SUPPORT_TARGET_TEMPERATURE
-        if self._supports_operation_mode:
+        if len(self._preset_modes) > 0:
             support |= SUPPORT_PRESET_MODE
         return support
 
@@ -205,7 +207,6 @@ class BusproClimate(ClimateEntity):
         """
         if self._mode not in list(HDL_TO_HA_PRESET):
             return PRESET_NONE
-
         return HDL_TO_HA_PRESET[self._mode]
 
     @property
@@ -213,7 +214,12 @@ class BusproClimate(ClimateEntity):
         """Return a list of available preset modes.
         Requires SUPPORT_PRESET_MODE.
         """
-        return list(HA_PRESET_TO_HDL)
+        if len(self._preset_modes) == 0:
+            return None
+
+        keys = HA_PRESET_TO_HDL.keys() & self._preset_modes
+        ha_preset_to_hdl_configured = {k:HA_PRESET_TO_HDL[k] for k in keys}
+        return list(ha_preset_to_hdl_configured)
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set new preset mode."""
@@ -227,7 +233,7 @@ class BusproClimate(ClimateEntity):
         climate_control.mode = mode
 
         await self._device.control_heating_status(climate_control)
-        self.async_write_ha_state()
+        await self.async_write_ha_state()
 
     @property
     def hvac_action(self) -> Optional[str]:
@@ -262,12 +268,12 @@ class BusproClimate(ClimateEntity):
             climate_control = ControlFloorHeatingStatus()
             climate_control.status = OnOffStatus.OFF.value
             await self._device.control_heating_status(climate_control)
-            self.async_write_ha_state()
+            await self.async_write_ha_state()
         elif hvac_mode == HVACMode.HEAT:
             climate_control = ControlFloorHeatingStatus()
             climate_control.status = OnOffStatus.ON.value
             await self._device.control_heating_status(climate_control)
-            self.async_write_ha_state()
+            await self.async_write_ha_state()
         else:
             _LOGGER.error("Unrecognized hvac mode: %s", hvac_mode)
             return
@@ -306,4 +312,4 @@ class BusproClimate(ClimateEntity):
             climate_control.normal_temperature = target_temperature
 
         await self._device.control_heating_status(climate_control)
-        self.async_write_ha_state()
+        await self.async_write_ha_state()

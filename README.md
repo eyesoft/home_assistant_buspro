@@ -128,16 +128,27 @@ climate:
     devices:
       - address: 1.74
         name: Living Room
-        supports_operation_mode: False
+        preset_modes: 
+          - none
+          - away
+          - home
+          - sleep
       - address: 1.74
         name: Front Door
 ```
 + **devices** _(Required)_: A list of devices to set up
   + **address** _(string) (Required)_: The address of the sensor device on the format `<subnet ID>.<device ID>`
   + **name** _(string) (Required)_: The name of the device
-  + **supports_operation_mode** _(boolean) (Optional)_: Does the climate control support change of operation mode? 
-  Default is True if not set.
+  + **preset_modes** _(list) (Optional)_: List of supported preset modes. Preset mode selection is disabled if not set. Possible values are shown in table below. Corresponding modes must be enabled in HDL (Floor Heating > Working Settings > Mode).
     
+| HA preset mode | HDL mode |
+|:--------------:|:--------:|
+|      none      |  Normal  |
+|      away      |   Away   |
+|      home      |   Day    |
+|     sleep      |  Night   |
+
+
 ---
 ## Services
 
