@@ -24,9 +24,9 @@ class Climate(Device):
         self._buspro = buspro
         self._device_address = device_address
 
-        self._temperature_type = None
-        self._status = None
-        self._mode = None
+        self._temperature_type = None   # Celsius/Fahrenheit
+        self._status = None             # On/Off
+        self._mode = None               # 1/2/3/4/5 (Normal/Day/Night/Away/Timer)
         self._current_temperature = None
         self._normal_temperature = None
         self._day_temperature = None

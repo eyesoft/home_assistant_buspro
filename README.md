@@ -24,10 +24,10 @@ light:
     devices:
       1.89.1:
         name: Living Room Light
-        running_time = 5
+        running_time: 5
       1.89.2:
         name: Front Door Light
-        dimmable = False
+        dimmable: False
 ```
 + **running_time** _(int) (Optional)_: Default running time in seconds for all devices. Running time is 0 seconds if not set.
 + **devices** _(Required)_: A list of devices to set up

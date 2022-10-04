@@ -11,23 +11,21 @@ from typing import Optional, List
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant.components.climate import (
-    PLATFORM_SCHEMA, 
+    PLATFORM_SCHEMA,
     ClimateEntity,
+    ClimateEntityFeature,
+    HVACMode,
+    HVACAction,
 )
 from homeassistant.components.climate.const import (
-    SUPPORT_PRESET_MODE, 
+    SUPPORT_PRESET_MODE,
     SUPPORT_TARGET_TEMPERATURE,
-    HVAC_MODE_HEAT, 
-    HVAC_MODE_OFF,
-    CURRENT_HVAC_IDLE,
-    CURRENT_HVAC_HEAT,
-    CURRENT_HVAC_OFF,
 )
 from homeassistant.const import (
-    CONF_NAME, 
-    CONF_DEVICES, 
-    CONF_ADDRESS, 
-    TEMP_CELSIUS, 
+    CONF_NAME,
+    CONF_DEVICES,
+    CONF_ADDRESS,
+    TEMP_CELSIUS,
     ATTR_TEMPERATURE,
 )
 from homeassistant.core import callback
@@ -56,6 +54,24 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
         ])
 })
 
+PRESET_NONE = "none"
+PRESET_AWAY = "away"
+PRESET_HOME = "home"
+PRESET_SLEEP = "sleep"
+
+HA_PRESET_TO_HDL = {
+    PRESET_NONE: 1,     # Normal
+    PRESET_HOME: 2,     # Day
+    PRESET_SLEEP: 3,    # Night
+    PRESET_AWAY: 4,     # Away
+}
+HDL_TO_HA_PRESET = {
+    1: PRESET_NONE,     # Normal
+    2: PRESET_HOME,     # Day
+    3: PRESET_SLEEP,    # Night
+    4: PRESET_AWAY,     # Away
+}
+
 
 # noinspection PyUnusedLocal
 async def async_setup_platform(hass, config, async_add_entites, discovery_info=None):
@@ -81,7 +97,7 @@ async def async_setup_platform(hass, config, async_add_entites, discovery_info=N
 
         relay_sensor = None
         relay_address = device_config[CONF_RELAY_ADDRESS]
-        if relay_address: 
+        if relay_address:
             relay_address2 = relay_address.split('.')
             relay_device_address = (int(relay_address2[0]), int(relay_address2[1]))
             relay_channel_number = int(relay_address2[2])
@@ -102,10 +118,11 @@ class BusproClimate(ClimateEntity):
         self._target_temperature = self._device.target_temperature
         self._is_on = self._device.is_on
         self._supports_operation_mode = supports_operation_mode
+        self._mode = self._device.mode  # 1/3/4
 
         self._relay_sensor = relay_sensor
         self._relay_sensor_is_on = None
-        if (self._relay_sensor is not None):
+        if self._relay_sensor is not None:
             self._relay_sensor_is_on = self._relay_sensor.single_channel_is_on
 
         self.async_register_callbacks()
@@ -117,18 +134,26 @@ class BusproClimate(ClimateEntity):
         # noinspection PyUnusedLocal
         async def after_update_callback(device):
             """Call after device was updated."""
+            self._device = device
             self._target_temperature = device.target_temperature
             self._is_on = device.is_on
-            if (self._hass is not None):
-                await self.async_update_ha_state()
+            self._mode = device.mode
+
+            _LOGGER.debug(f"Device '{self._device.name}', " \
+                            f"IsOn: {self._is_on}, " \
+                            f"Mode: {self._device.mode}, " \
+                            f"TargetTemp: {self._device.target_temperature}")
+
+            if self._hass is not None:
+                self.async_write_ha_state()
 
         async def after_relay_sensor_update_callback(device):
             """Call after device was updated."""
             self._relay_sensor_is_on = device.single_channel_is_on
-            await self.async_update_ha_state()
+            self.async_write_ha_state()
 
         self._device.register_device_updated_cb(after_update_callback)
-        
+
         if self._relay_sensor is not None:
             self._relay_sensor.register_device_updated_cb(after_relay_sensor_update_callback)
 
@@ -177,61 +202,74 @@ class BusproClimate(ClimateEntity):
     @property
     def preset_mode(self) -> Optional[str]:
         """Return the current preset mode, e.g., home, away, temp.
-        Requires SUPPORT_PRESET_MODE.
         """
-        return None
+        if self._mode not in list(HDL_TO_HA_PRESET):
+            return PRESET_NONE
+
+        return HDL_TO_HA_PRESET[self._mode]
 
     @property
     def preset_modes(self) -> Optional[List[str]]:
         """Return a list of available preset modes.
         Requires SUPPORT_PRESET_MODE.
         """
-        return None
+        return list(HA_PRESET_TO_HDL)
+
+    async def async_set_preset_mode(self, preset_mode: str) -> None:
+        """Set new preset mode."""
+        if preset_mode not in list(HA_PRESET_TO_HDL):
+            preset_mode = PRESET_NONE
+        mode = HA_PRESET_TO_HDL[preset_mode]
+
+        _LOGGER.debug(f"Setting preset mode to '{preset_mode}' ({mode}) for device '{self._device.name}'")
+
+        climate_control = ControlFloorHeatingStatus()
+        climate_control.mode = mode
+
+        await self._device.control_heating_status(climate_control)
+        self.async_write_ha_state()
 
     @property
     def hvac_action(self) -> Optional[str]:
         """Return current action ie. heating, idle, off."""
-        if self._device.is_on:
-            
+        if self._is_on:
             if self._relay_sensor_is_on is None:
-                return CURRENT_HVAC_HEAT
+                return HVACAction.Heat
             else:
                 if self._relay_sensor_is_on:
-                    return CURRENT_HVAC_HEAT
+                    return HVACAction.HEATING
                 else:
-                    return CURRENT_HVAC_IDLE
+                    return HVACAction.IDLE
         else:
-            return CURRENT_HVAC_OFF
+            return HVACAction.OFF
 
     @property
     def hvac_mode(self) -> Optional[str]:
         """Return current operation ie. heat, cool, idle."""
-        if self._device.is_on:
-            return HVAC_MODE_HEAT
+        if self._is_on:
+            return HVACMode.HEAT
         else:
-            return HVAC_MODE_OFF
+            return HVACMode.OFF
 
     @property
     def hvac_modes(self) -> Optional[List[str]]:
         """Return the list of available operation modes."""
-        return [HVAC_MODE_HEAT, HVAC_MODE_OFF]
+        return [HVACMode.HEAT, HVACMode.OFF]
 
     async def async_set_hvac_mode(self, hvac_mode: str) -> None:
         """Set operation mode."""
-        if hvac_mode == HVAC_MODE_OFF:
-            self._is_on = False
+        if hvac_mode == HVACMode.OFF:
             climate_control = ControlFloorHeatingStatus()
             climate_control.status = OnOffStatus.OFF.value
             await self._device.control_heating_status(climate_control)
-            await self.async_update_ha_state()
-        elif hvac_mode == HVAC_MODE_HEAT:
-            self._is_on = True
+            self.async_write_ha_state()
+        elif hvac_mode == HVACMode.HEAT:
             climate_control = ControlFloorHeatingStatus()
             climate_control.status = OnOffStatus.ON.value
             await self._device.control_heating_status(climate_control)
-            await self.async_update_ha_state()
+            self.async_write_ha_state()
         else:
-            _LOGGER.error("Unrecognized operation mode: %s", operation_mode)
+            _LOGGER.error("Unrecognized hvac mode: %s", hvac_mode)
             return
 
     @property
@@ -250,9 +288,22 @@ class BusproClimate(ClimateEntity):
         if temperature is None:
             return
 
-        self._target_temperature = temperature
         climate_control = ControlFloorHeatingStatus()
-        climate_control.normal_temperature = int(temperature)
-        await self._device.control_heating_status(climate_control)
+        preset = HDL_TO_HA_PRESET[self._mode]
+        target_temperature = int(temperature)
 
-        await self.async_update_ha_state()
+        _LOGGER.debug(f"Setting '{preset}' temperature to {target_temperature}")
+
+        if preset == PRESET_NONE:
+            climate_control.normal_temperature = target_temperature
+        elif preset == PRESET_HOME:
+            climate_control.day_temperature = target_temperature
+        elif preset == PRESET_SLEEP:
+            climate_control.night_temperature = target_temperature
+        elif preset == PRESET_AWAY:
+            climate_control.away_temperature = target_temperature
+        else:
+            climate_control.normal_temperature = target_temperature
+
+        await self._device.control_heating_status(climate_control)
+        self.async_write_ha_state()
