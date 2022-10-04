@@ -107,6 +107,8 @@ class BusproSensor(Entity):
         self._device_class = device_class
         self.async_register_callbacks()
         self._offset = offset
+        self._temperature = None
+        self._brightness = None
 
         self._should_poll = False
         if scan_interval > 0:
@@ -120,7 +122,9 @@ class BusproSensor(Entity):
         async def after_update_callback(device):
             """Call after device was updated."""
             if self._hass is not None:
-                await self.async_update_ha_state()
+                self._temperature = self._device.temperature
+                self._brightness = self._device.brightness
+                self.async_write_ha_state()
 
         self._device.register_device_updated_cb(after_update_callback)
 
@@ -140,21 +144,33 @@ class BusproSensor(Entity):
     @property
     def available(self):
         """Return True if entity is available."""
-        return self._hass.data[DATA_BUSPRO].connected
+        connected = self._hass.data[DATA_BUSPRO].connected
+
+        if self._sensor_type == TEMPERATURE:
+            return connected and self._current_temperature is not None
+
+        if self._sensor_type == ILLUMINANCE:
+            return connected and self._brightness is not None
 
     @property
     def state(self):
         """Return the state of the sensor."""
         if self._sensor_type == TEMPERATURE:
-            temperature = self._device.temperature
-            
-            if self._offset is not None and temperature != 0:
-                temperature = temperature + int(self._offset)
+            return self._current_temperature
 
-            return temperature
-            
         if self._sensor_type == ILLUMINANCE:
-            return self._device.brightness
+            return self._brightness
+
+    @property
+    def _current_temperature(self):
+        if self._temperature is None:
+            return None
+
+        temperature = self._temperature
+        if self._offset is not None and temperature != 0:
+            temperature = temperature + int(self._offset)
+
+        return temperature
 
     @property
     def device_class(self):
