@@ -233,7 +233,7 @@ class BusproClimate(ClimateEntity):
         climate_control.mode = mode
 
         await self._device.control_heating_status(climate_control)
-        await self.async_write_ha_state()
+        self.async_write_ha_state()
 
     @property
     def hvac_action(self) -> Optional[str]:
@@ -268,12 +268,12 @@ class BusproClimate(ClimateEntity):
             climate_control = ControlFloorHeatingStatus()
             climate_control.status = OnOffStatus.OFF.value
             await self._device.control_heating_status(climate_control)
-            await self.async_write_ha_state()
+            self.async_write_ha_state()
         elif hvac_mode == HVACMode.HEAT:
             climate_control = ControlFloorHeatingStatus()
             climate_control.status = OnOffStatus.ON.value
             await self._device.control_heating_status(climate_control)
-            await self.async_write_ha_state()
+            self.async_write_ha_state()
         else:
             _LOGGER.error("Unrecognized hvac mode: %s", hvac_mode)
             return
@@ -312,4 +312,4 @@ class BusproClimate(ClimateEntity):
             climate_control.normal_temperature = target_temperature
 
         await self._device.control_heating_status(climate_control)
-        await self.async_write_ha_state()
+        self.async_write_ha_state()
