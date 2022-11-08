@@ -72,8 +72,6 @@ async def async_setup_platform(hass, config, async_add_entites, discovery_info=N
         address = device_config[CONF_ADDRESS]
         name = device_config[CONF_NAME]
         sensor_type = device_config[CONF_TYPE]
-        unit_of_measurement = device_config[CONF_UNIT_OF_MEASUREMENT]
-        device_class = device_config[CONF_DEVICE_CLASS]
         device = device_config[CONF_DEVICE]
         offset = device_config[CONF_OFFSET]
         
@@ -85,12 +83,12 @@ async def async_setup_platform(hass, config, async_add_entites, discovery_info=N
         address2 = address.split('.')
         device_address = (int(address2[0]), int(address2[1]))
 
-        _LOGGER.debug("Adding sensor '{}' with address {}, sensor type '{}' and device_class '{}'".format(
-            name, device_address, sensor_type, device_class))
+        _LOGGER.debug("Adding sensor '{}' with address {}, sensor type '{}'".format(
+            name, device_address, sensor_type))
 
         sensor = Sensor(hdl, device_address, device=device, name=name)
 
-        devices.append(BusproSensor(hass, sensor, sensor_type, unit_of_measurement, device_class, interval, offset))
+        devices.append(BusproSensor(hass, sensor, sensor_type, interval, offset))
 
     async_add_entites(devices)
 
@@ -99,12 +97,10 @@ async def async_setup_platform(hass, config, async_add_entites, discovery_info=N
 class BusproSensor(Entity):
     """Representation of a Buspro switch."""
 
-    def __init__(self, hass, device, sensor_type, unit_of_measurement, device_class, scan_interval, offset):
+    def __init__(self, hass, device, sensor_type, scan_interval, offset):
         self._hass = hass
         self._device = device
-        self._unit_of_measurement = unit_of_measurement
         self._sensor_type = sensor_type
-        self._device_class = device_class
         self.async_register_callbacks()
         self._offset = offset
         self._temperature = None
@@ -175,17 +171,27 @@ class BusproSensor(Entity):
     @property
     def device_class(self):
         """Return the class of this sensor."""
-        return self._device_class
+        if self._sensor_type == TEMPERATURE:
+            return "temperature"
+        if self._sensor_type == ILLUMINANCE:
+            return "illuminance"
+        return None
 
     @property
     def unit_of_measurement(self):
         """Return the unit this state is expressed in."""
-        return self._unit_of_measurement
+        if self._sensor_type == TEMPERATURE:
+            return "°C"
+        if self._sensor_type == ILLUMINANCE:
+            return "lux"
+        return ""
 
     @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         """Return the state attributes."""
-        return None
+        attributes = {}
+        attributes['state_class'] = "measurement"
+        return attributes
 
     @property
     def unique_id(self):
