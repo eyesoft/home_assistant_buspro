@@ -17,10 +17,6 @@ from homeassistant.components.climate import (
     HVACMode,
     HVACAction,
 )
-from homeassistant.components.climate.const import (
-    SUPPORT_PRESET_MODE,
-    SUPPORT_TARGET_TEMPERATURE,
-)
 from homeassistant.const import (
     CONF_NAME,
     CONF_DEVICES,
@@ -127,8 +123,17 @@ class BusproClimate(ClimateEntity):
         if self._relay_sensor is not None:
             self._relay_sensor_is_on = self._relay_sensor.single_channel_is_on
 
+        self._enable_turn_on_off_backwards_compatibility = False
+        self._attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE | ClimateEntityFeature.TURN_OFF | ClimateEntityFeature.TURN_ON
+
         self.async_register_callbacks()
 
+    async def async_turn_off(self) -> None:
+        await self.async_set_hvac_mode(HVACMode.OFF)
+
+    async def async_turn_on(self) -> None:
+        await self.async_set_hvac_mode(HVACMode.HEATING)
+    
     @callback
     def async_register_callbacks(self):
         """Register callbacks to update hass after device was changed."""
@@ -192,14 +197,6 @@ class BusproClimate(ClimateEntity):
             target_temperature = self._device.target_temperature
 
         return target_temperature
-
-    @property
-    def supported_features(self):
-        """Return the list of supported features."""
-        support = SUPPORT_TARGET_TEMPERATURE
-        if len(self._preset_modes) > 0:
-            support |= SUPPORT_PRESET_MODE
-        return support
 
     @property
     def preset_mode(self) -> Optional[str]:
