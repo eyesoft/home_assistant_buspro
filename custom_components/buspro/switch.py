@@ -67,7 +67,7 @@ class BusproSwitch(SwitchEntity):
         # noinspection PyUnusedLocal
         async def after_update_callback(device):
             """Call after device was updated."""
-            await self.async_update_ha_state()
+            await self.async_write_ha_state()
 
         self._device.register_device_updated_cb(after_update_callback)
 
