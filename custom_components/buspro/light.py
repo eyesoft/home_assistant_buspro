@@ -9,7 +9,12 @@ import logging
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-from homeassistant.components.light import LightEntity, PLATFORM_SCHEMA, SUPPORT_BRIGHTNESS, ATTR_BRIGHTNESS
+from homeassistant.components.light import (
+    LightEntity, 
+    ColorMode, 
+    PLATFORM_SCHEMA, 
+    ATTR_BRIGHTNESS
+)
 from homeassistant.const import (CONF_NAME, CONF_DEVICES)
 from homeassistant.core import callback
 
@@ -56,8 +61,7 @@ async def async_setup_platform(hass, config, async_add_entites, discovery_info=N
         address2 = address.split('.')
         device_address = (int(address2[0]), int(address2[1]))
         channel_number = int(address2[2])
-        _LOGGER.debug("Adding light '{}' with address {} and channel number {}".format(name, device_address,
-                                                                                       channel_number))
+        _LOGGER.debug("Adding light '{}' with address {} and channel number {}".format(name, device_address, channel_number))
 
         light = Light(hdl, device_address, channel_number, name)
         devices.append(BusproLight(hass, light, device_running_time, dimmable))
@@ -74,6 +78,8 @@ class BusproLight(LightEntity):
         self._device = device
         self._running_time = running_time
         self._dimmable = dimmable
+        self._attr_color_mode = ColorMode.BRIGHTNESS
+        self._attr_supported_color_modes = {ColorMode.BRIGHTNESS}
         self.async_register_callbacks()
 
     @callback
@@ -107,14 +113,6 @@ class BusproLight(LightEntity):
         """Return the brightness of the light."""
         brightness = self._device.current_brightness / 100 * 255
         return brightness
-
-    @property
-    def supported_features(self):
-        """Flag supported features."""
-        flags = 0
-        if self._dimmable:
-            flags |= SUPPORT_BRIGHTNESS
-        return flags
 
     @property
     def is_on(self):
