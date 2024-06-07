@@ -41,8 +41,7 @@ async def async_setup_platform(hass, config, async_add_entites, discovery_info=N
         address2 = address.split('.')
         device_address = (int(address2[0]), int(address2[1]))
         channel_number = int(address2[2])
-        _LOGGER.debug("Adding switch '{}' with address {} and channel number {}".format(name, device_address,
-                                                                                        channel_number))
+        _LOGGER.debug("Adding switch '{}' with address {} and channel number {}".format(name, device_address, channel_number))
 
         switch = Switch(hdl, device_address, channel_number, name)
 
@@ -67,7 +66,7 @@ class BusproSwitch(SwitchEntity):
         # noinspection PyUnusedLocal
         async def after_update_callback(device):
             """Call after device was updated."""
-            await self.async_write_ha_state()
+            self.async_write_ha_state()
 
         self._device.register_device_updated_cb(after_update_callback)
 
